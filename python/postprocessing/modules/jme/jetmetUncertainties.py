@@ -83,7 +83,7 @@ class jetmetUncertaintiesProducer(Module):
         self.jesUncertainty = {}
         # implementation didn't seem to work for factorized JEC, try again another way
         for jesUncertainty in self.jesUncertainties:
-            pars = ROOT.JetCorrectorParameters(os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName), '')
+            pars = ROOT.JetCorrectorParameters(os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName), jesUncertainty)
             self.jesUncertainty[jesUncertainty] = ROOT.JetCorrectionUncertainty(pars)
 
         self.jetSmearer.beginJob()
