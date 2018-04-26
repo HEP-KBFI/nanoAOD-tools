@@ -74,11 +74,11 @@ class jetmetUncertaintiesProducer(Module):
                 sources = filter(lambda x: x.startswith("[") and x.endswith("]"), lines)
                 sources = map(lambda x: x[1:-1], sources)
                 self.jesUncertainties = sources
-            
+
 
 	if self.redoJEC :
 	    self.jetReCalibrator = JetReCalibrator(globalTag, jetType , True, self.jesInputFilePath, calculateSeparateCorrections = False, calculateType1METCorrection  = False)
-	
+
 
         # define energy threshold below which jets are considered as "unclustered energy"
         # (cf. JetMETCorrections/Type1MET/python/correctionTermsPfMetType1Type2_cff.py )
@@ -92,17 +92,19 @@ class jetmetUncertaintiesProducer(Module):
 
     def beginJob(self):
 
-        print("Loading jet energy scale (JES) uncertainties from file '%s'" % os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName))
-        #self.jesUncertainty = ROOT.JetCorrectionUncertainty(os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName))
+        print("Loading jet energy scale (JES) uncertainties from file '%s'" % os.path.join(
+            self.jesInputFilePath, self.jesUncertaintyInputFileName))
+        # self.jesUncertainty = ROOT.JetCorrectionUncertainty(os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName))
 
         self.jesUncertainty = {}
         # implementation didn't seem to work for factorized JEC, try again another way
         for jesUncertainty in self.jesUncertainties:
-            if jesUncertainty == 'Total' and self.era == '2016':
+            jesUncertainty_label = jesUncertainty
+            if jesUncertainty == 'Total' and len(self.jesUncertainties) == 1:
                 jesUncertainty_label = ''
-            else:
-                jesUncertainty_label = jesUncertainty
-            pars = ROOT.JetCorrectorParameters(os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName), jesUncertainty_label)
+            pars = ROOT.JetCorrectorParameters(
+                os.path.join(self.jesInputFilePath, self.jesUncertaintyInputFileName),
+                jesUncertainty_label)
             self.jesUncertainty[jesUncertainty] = ROOT.JetCorrectionUncertainty(pars)
 
         self.jetSmearer.beginJob()
@@ -230,7 +232,7 @@ class jetmetUncertaintiesProducer(Module):
             # evaluate JER scale factors and uncertainties
             # (cf. https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution and https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyResolution )
             ( jet_pt_jerNomVal, jet_pt_jerUpVal, jet_pt_jerDownVal ) = self.jetSmearer.getSmearValsPt(jet, genJet, rho)
-	    
+
 	    jet_pt=jet.pt
 	    if self.redoJEC :
 		jet_pt = self.jetReCalibrator.correct(jet,rho)
