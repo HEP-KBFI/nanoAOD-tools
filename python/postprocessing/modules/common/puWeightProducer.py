@@ -3,7 +3,7 @@ import os
 import numpy as np
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collection 
+from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collection
 from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 
 class puWeightProducer(Module):
@@ -27,7 +27,7 @@ class puWeightProducer(Module):
         self.verbose = verbose
         self.nvtxVar = nvtx_var
         self.doSysVar = doSysVar
-       
+
         #Try to load module via python dictionaries
         try:
             ROOT.gSystem.Load("libPhysicsToolsNanoAODTools")
@@ -56,9 +56,9 @@ class puWeightProducer(Module):
 		print "Computing PU profile for this file"
 		ROOT.gROOT.cd()
 		inputFile.Get("Events").Project("autoPU",self.nvtxVar)#doitfrom inputFile
-		if outputFile : 
+		if outputFile :
 		    outputFile.cd()
-		    self.myh.Write()    
+		    self.myh.Write()
         self._worker = ROOT.WeightCalculatorFromHistogram(self.myh,self.targeth,self.norm,self.fixLargeWeights,self.verbose)
         self.out = wrappedOutputTree
         self.out.branch(self.name, "F")
@@ -92,3 +92,4 @@ puWeight = lambda : puWeightProducer(pufile_mc,pufile_data,"pu_mc","pileup",verb
 
 pufile_data2017="%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup/PileupData_ReRecoJSON_Full2017.root" % os.environ['CMSSW_BASE']
 puAutoWeight = lambda : puWeightProducer("auto",pufile_data2017,"pu_mc","pileup",verbose=False,doSysVar=False)
+puWeight2017 = lambda mc_dist: puWeightProducer(mc_dist,pufile_data2017,"autoPU","pileup",verbose=False,doSysVar=True)
