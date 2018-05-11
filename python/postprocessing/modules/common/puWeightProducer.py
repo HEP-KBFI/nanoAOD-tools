@@ -92,4 +92,4 @@ puWeight = lambda : puWeightProducer(pufile_mc,pufile_data,"pu_mc","pileup",verb
 
 pufile_data2017="%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup/PileupData_ReRecoJSON_Full2017.root" % os.environ['CMSSW_BASE']
 puAutoWeight = lambda : puWeightProducer("auto",pufile_data2017,"pu_mc","pileup",verbose=False,doSysVar=False)
-puWeight2017 = lambda mc_dist: puWeightProducer(mc_dist,pufile_data2017,"autoPU","pileup",verbose=False,doSysVar=True)
+puWeight2017 = lambda mc_dist, process_name: puWeightProducer(mc_dist,pufile_data2017,process_name,"pileup",verbose=False,doSysVar=True)
