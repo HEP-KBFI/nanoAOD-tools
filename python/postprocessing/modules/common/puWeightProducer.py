@@ -86,10 +86,13 @@ class puWeightProducer(Module):
 
 # define modules using the syntax 'name = lambda : constructor' to avoid having them loaded when not needed
 
-pufile_mc="%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup/pileup_profile_Summer16.root" % os.environ['CMSSW_BASE']
-pufile_data="%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup/PileupData_GoldenJSON_Full2016.root" % os.environ['CMSSW_BASE']
+pufile_basedir = "%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup" % os.environ['CMSSW_BASE']
+pufile_mc=os.path.join(pufile_basedir, "pileup_profile_Summer16.root")
+pufile_data=os.path.join(pufile_basedir, "PileupData_GoldenJSON_Full2016.root")
 puWeight = lambda : puWeightProducer(pufile_mc,pufile_data,"pu_mc","pileup",verbose=False)
 
-pufile_data2017="%s/src/PhysicsTools/NanoAODTools/python/postprocessing/data/pileup/PileupData_ReRecoJSON_Full2017_oldnormtag.root" % os.environ['CMSSW_BASE']
+pufile_data2017_oldnormtag=os.path.join(pufile_basedir,"PileupData_ReRecoJSON_Full2017_oldnormtag.root")
+pufile_data2017=os.path.join(pufile_basedir, "PileupData_ReRecoJSON_v1_Full2017.root")
 puAutoWeight = lambda : puWeightProducer("auto",pufile_data2017,"pu_mc","pileup",verbose=False,doSysVar=False)
 puWeight2017 = lambda mc_dist, process_name: puWeightProducer(mc_dist,pufile_data2017,process_name,"pileup",verbose=False,doSysVar=True)
+puWeight2017_oldnormtag = lambda mc_dist, process_name: puWeightProducer(mc_dist,pufile_data2017_oldnormtag,process_name,"pileup",name="puWeight_oldnormtag",verbose=False,doSysVar=True)
