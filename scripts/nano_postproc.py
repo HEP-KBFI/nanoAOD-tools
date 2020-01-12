@@ -5,6 +5,19 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 from importlib import import_module
 from PhysicsTools.NanoAODTools.postprocessing.framework.postprocessor import PostProcessor
 
+def find_modules(names):
+  split = names.split(',')
+  has_args = lambda name: name.find('(') != -1 and name.endswith(')') and name.count('(') == 1 and name.count(')') == 1
+  modules = {}
+  for name in split:
+      if has_args(name):
+          module_name = name[:name.find('(')]
+          module_args = tuple(name[ name.find('(') + 1 : name.find(')') ].split(';'))
+          modules[module_name] = module_args
+      else:
+          modules[name] = None
+  return modules
+
 if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser(usage="%prog [options] outputDir inputFiles")
@@ -39,16 +52,17 @@ if __name__ == "__main__":
     for mod, names in options.imports: 
         import_module(mod)
         obj = sys.modules[mod]
-        selnames = names.split(",")
+        selnames = find_modules(names)
         mods = dir(obj)
         for name in selnames:
             if name in mods:
-                print "Loading %s from %s " % (name, mod)
-                if type(getattr(obj,name)) == list:
-                    for mod in getattr(obj,name):
-                        modules.append( mod())
+                print "Loading %s from %s%s" % (name, mod, (' with arguments: %s' % ', '.join(selnames[name]) if selnames[name] else ''))
+                imported_func = getattr(obj, name)
+                if selnames[name]:
+                    bound_func = lambda: imported_func(*selnames[name])
+                    modules.append(bound_func())
                 else:
-                    modules.append(getattr(obj,name)())
+                    modules.append(imported_func())
     if options.noOut:
         if len(modules) == 0: 
             raise RuntimeError("Running with --noout and no modules does nothing!")
