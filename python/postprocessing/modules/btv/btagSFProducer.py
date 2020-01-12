@@ -31,7 +31,7 @@ class btagSFProducer(Module):
     """Calculate btagging scale factors
         algo has to be either 'csvv2' or 'cmva'
     """
-    def __init__(self, era, algo = 'csvv2', sfFileName = None, verbose = 0):
+    def __init__(self, era, algo = 'deepjet', sfFileName = None, verbose = 0):
 
         self.era = era
 
@@ -70,7 +70,7 @@ class btagSFProducer(Module):
                 }
             },
             'deepcsv' : {
-                'Legacy2016' : {
+                '2016' : {
                     'inputFileName' : "DeepCSV_2016LegacySF_V1.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
@@ -79,8 +79,17 @@ class btagSFProducer(Module):
                     },
                     'supported_wp' : [ "L", "M", "T", "shape_corr"]
                 },
+                '2016_TuneCP5' : {
+                    'inputFileName' : "DeepCSV_2016LegacySF_V1_TuneCP5.csv",
+                    'measurement_types' : {
+                        0 : "comb",  # b
+                        1 : "comb",  # c
+                        2 : "incl"   # light
+                    },
+                    'supported_wp' : [ "L", "M", "T", "shape_corr"]
+                },
                 '2017' : {
-                    'inputFileName' : "DeepCSV_94XSF_V4_B_F.csv",
+                    'inputFileName' : "DeepCSV_94XSF_V5_B_F.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
                         1 : "comb",  # c
@@ -99,7 +108,7 @@ class btagSFProducer(Module):
                 }    
             },
             'deepjet' : {
-                'Legacy2016' : {
+                '2016' : {
                     'inputFileName' : "DeepJet_2016LegacySF_V1.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
@@ -108,8 +117,17 @@ class btagSFProducer(Module):
                     },
                     'supported_wp' : [ "L", "M", "T", "shape_corr"]
                 },
+                '2016_TuneCP5' : {
+                    'inputFileName' : "DeepJet_2016LegacySF_V1_TuneCP5.csv",
+                    'measurement_types' : {
+                        0 : "comb",  # b
+                        1 : "comb",  # c
+                        2 : "incl"   # light
+                    },
+                    'supported_wp' : [ "L", "M", "T", "shape_corr"]
+                },
                 '2017' : {
-                    'inputFileName' : "DeepFlavour_94XSF_V3_B_F.csv",
+                    'inputFileName' : "DeepFlavour_94XSF_V4_B_F.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
                         1 : "comb",  # c
@@ -320,7 +338,7 @@ class btagSFProducer(Module):
         elif self.algo == "deepjet":
             discr = "btagDeepFlavB"
         else:
-            raise ValueError("ERROR: Invalid algorithm '%s'! Please choose either 'csvv2' or 'cmva'." % self.algo)
+            raise ValueError("ERROR: Invalid algorithm '%s'!" % self.algo)
 
         preloaded_jets = [(jet.pt, jet.eta, self.getFlavorBTV(jet.hadronFlavour), getattr(jet, discr)) for jet in jets]
         reader = self.getReader('M', False)
@@ -341,3 +359,4 @@ class btagSFProducer(Module):
 
 btagSF2016 = lambda : btagSFProducer("2016")
 btagSF2017 = lambda : btagSFProducer("2017")
+btagSF2018 = lambda : btagSFProducer("2018")
