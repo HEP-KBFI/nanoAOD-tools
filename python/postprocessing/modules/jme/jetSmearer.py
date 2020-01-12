@@ -8,7 +8,7 @@ from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 from PhysicsTools.NanoAODTools.postprocessing.tools import matchObjectCollection, matchObjectCollectionMultiple
 
 class jetSmearer(Module):
-    def __init__(self, globalTag, jetType = "AK4PFchs", jerInputFileName = "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt", jerUncertaintyInputFileName = "Spring16_25nsV10_MC_SF_AK4PFchs.txt", jmr_vals=[1.09, 1.14, 1.04]):
+    def __init__(self, globalTag, jetType = "AK4PFchs", jerInputFileName = "", jerUncertaintyInputFileName = "", jmr_vals=[1.09, 1.14, 1.04]):
         
         #--------------------------------------------------------------------------------------------
         # CV: globalTag and jetType not yet used, as there is no consistent set of txt files for
@@ -20,9 +20,10 @@ class jetSmearer(Module):
         # Text files are now tarred so must extract first
         self.jerInputArchivePath = os.environ['CMSSW_BASE'] + "/src/PhysicsTools/NanoAODTools/data/jme/"
         self.jerTag = jerInputFileName[:jerInputFileName.find('_MC_')+len('_MC')]
-        self.jerArchive = tarfile.open(self.jerInputArchivePath+self.jerTag+".tgz", "r:gz")
-        self.jerInputFilePath = tempfile.mkdtemp()
-        self.jerArchive.extractall(self.jerInputFilePath)
+        #self.jerArchive = tarfile.open(self.jerInputArchivePath+self.jerTag+".tgz", "r:gz")
+        #self.jerInputFilePath = tempfile.mkdtemp()
+        #self.jerArchive.extractall(self.jerInputFilePath)
+        self.jerInputFilePath = os.path.join(self.jerInputArchivePath, self.jerTag)
         self.jerInputFileName = jerInputFileName
         self.jerUncertaintyInputFileName = jerUncertaintyInputFileName
         
@@ -54,7 +55,7 @@ class jetSmearer(Module):
         self.jerSF_and_Uncertainty = ROOT.PyJetResolutionScaleFactorWrapper(os.path.join(self.jerInputFilePath, self.jerUncertaintyInputFileName))
         
     def endJob(self):
-        shutil.rmtree(self.jerInputFilePath)
+        #shutil.rmtree(self.jerInputFilePath)
 
     def setSeed(self,event):
         """Set seed deterministically."""

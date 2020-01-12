@@ -84,9 +84,10 @@ class fatJetUncertaintiesProducer(Module):
         # (downloaded from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC )
         self.jesInputArchivePath = os.environ['CMSSW_BASE'] + "/src/PhysicsTools/NanoAODTools/data/jme/"
         # Text files are now tarred so must extract first into temporary directory (gets deleted during python memory management at script exit)
-        self.jesArchive = tarfile.open(self.jesInputArchivePath+globalTag+".tgz", "r:gz") if not archive else tarfile.open(self.jesInputArchivePath+archive+".tgz", "r:gz")
-        self.jesInputFilePath = tempfile.mkdtemp()
-        self.jesArchive.extractall(self.jesInputFilePath)
+        #self.jesArchive = tarfile.open(self.jesInputArchivePath+globalTag+".tgz", "r:gz") if not archive else tarfile.open(self.jesInputArchivePath+archive+".tgz", "r:gz")
+        #self.jesInputFilePath = tempfile.mkdtemp()
+        #self.jesArchive.extractall(self.jesInputFilePath)
+        self.jesInputFilePath = os.path.join(self.jesInputArchivePath, globalTag)
 
         if len(jesUncertainties) == 1 and jesUncertainties[0] == "Total":
             self.jesUncertaintyInputFileName = globalTag + "_Uncertainty_" + jetType + ".txt"
@@ -129,7 +130,7 @@ class fatJetUncertaintiesProducer(Module):
 
     def endJob(self):
         self.jetSmearer.endJob()
-        shutil.rmtree(self.jesInputFilePath)
+        #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree
