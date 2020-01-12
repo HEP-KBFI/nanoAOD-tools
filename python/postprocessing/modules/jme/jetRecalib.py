@@ -47,6 +47,7 @@ class jetRecalib(Module):
 	pass
 
     def endJob(self):
+        pass
 	#shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
