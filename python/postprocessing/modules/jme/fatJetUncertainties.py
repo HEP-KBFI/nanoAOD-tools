@@ -23,6 +23,8 @@ class fatJetUncertaintiesProducer(Module):
         #--------------------------------------------------------------------------------------------
 
         self.jesUncertainties = jesUncertainties
+        jetType_orig = jetType
+        jetType = jetType.replace('LSLoose', '').replace('LSFakeable', '')
         # smear jet pT to account for measured difference in JER between data and simulation.
         if jerTag != "":
             self.jerInputFileName = jerTag + "_PtResolution_" + jetType + ".txt"
@@ -48,13 +50,25 @@ class fatJetUncertaintiesProducer(Module):
         self.jetSmearer = jetSmearer(globalTag, jetType, self.jerInputFileName, self.jerUncertaintyInputFileName, self.jmrVals)
 
         if "AK4" in jetType : 
-            self.jetBranchName = "Jet"
+            if "AK4LSLoose" in jetType_orig:
+                self.jetBranchName = "JetAK4LSLoose"
+            elif "AK4LSFakeable" in jetType_orig:
+                self.jetBranchName = "JetAK4LSFakeable"
+            else:
+                self.jetBranchName = "Jet"
             self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
             self.doGroomed = False
         elif "AK8" in jetType :
-            self.jetBranchName = "FatJet"
-            self.subJetBranchName = "SubJet"
+            if "AK8LSLoose" in jetType_orig:
+                self.jetBranchName = "FatJetAK8LSLoose"
+                self.subJetBranchName = "SubJetAK8LSLoose"
+            elif "AK8LSFakeable" in jetType_orig:
+                self.jetBranchName = "FatJetAK8LSFakeable"
+                self.subJetBranchName = "SubJetAK8LSFakeable"
+            else:
+                self.jetBranchName = "FatJet"
+                self.subJetBranchName = "SubJet"
             self.genJetBranchName = "GenJetAK8"
             self.genSubJetBranchName = "SubGenJetAK8"
             if not self.noGroom:
