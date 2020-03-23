@@ -27,6 +27,8 @@ class jetmetUncertaintiesProducer(Module):
         #--------------------------------------------------------------------------------------------
 
         self.jesUncertainties = jesUncertainties
+        jetType_orig = jetType
+        jetType = jetType.replace('AK4LSLoose', 'AK4').replace('AK4LSFakeable', '')
 
         # smear jet pT to account for measured difference in JER between data and simulation.
         if jerTag != "":
@@ -46,8 +48,13 @@ class jetmetUncertaintiesProducer(Module):
 
         self.jetSmearer = jetSmearer(globalTag, jetType, self.jerInputFileName, self.jerUncertaintyInputFileName)
 
-        if "AK4" in jetType : 
-            self.jetBranchName = "Jet"
+        if "AK4" in jetType :
+            if "AK4LSLoose" in jetType_orig:
+                self.jetBranchName = "JetAK4LSLoose"
+            elif "AK4LSFakeable" in jetType_orig:
+                self.jetBranchName = "JetAK4LSFakeable"
+            else:
+                self.jetBranchName = "Jet"
             self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
         else:
