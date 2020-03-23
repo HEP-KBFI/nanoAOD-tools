@@ -1,5 +1,6 @@
 import ROOT
 import os
+import re
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collection
@@ -187,8 +188,11 @@ class btagSFProducer(Module):
                 },
             }
         }
-        assert(self.jetCollectionName in supported_btagSF_all)
-        supported_btagSF = supported_btagSF_all[self.jetCollectionName]
+        jetCollectionName_key = self.jetCollectionName
+        if re.match('\w+AK\dLS\w+', jetCollectionName_key):
+            jetCollectionName_key = jetCollectionName_key[:jetCollectionName_key.index('AK')]
+        assert(jetCollectionName_key in supported_btagSF_all)
+        supported_btagSF = supported_btagSF_all[jetCollectionName_key]
 
         supported_algos = []
         for algo in supported_btagSF.keys():
