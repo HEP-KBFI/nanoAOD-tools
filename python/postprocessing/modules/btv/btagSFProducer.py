@@ -31,13 +31,15 @@ class btagSFProducer(Module):
     """Calculate btagging scale factors
         algo has to be either 'csvv2' or 'cmva'
     """
-    def __init__(self, era, algo = 'deepjet', sfFileName = None, verbose = 0):
+    def __init__(self, era, algo = 'deepjet', sfFileName = None, verbose = 0, jetCollectionName = 'Jet'):
 
         self.era = era
 
         self.algo = algo.lower()
 
         self.verbose = verbose
+
+        self.jetCollectionName = jetCollectionName
 
         # CV: Return value of BTagCalibrationReader::eval_auto_bounds() is zero
         #     in case jet abs(eta) > 2.4 !!
@@ -48,7 +50,8 @@ class btagSFProducer(Module):
         self.inputFileName = sfFileName
         self.measurement_types = None
         self.supported_wp = None
-        supported_btagSF = {
+        supported_btagSF_all = {}
+        supported_btagSF_all['Jet'] = {
             'csvv2' : {
                 '2016' : {
                     'inputFileName' : "btagSF_CSVv2_ichep2016.csv",
@@ -153,6 +156,39 @@ class btagSFProducer(Module):
                 }
             }
         }
+        supported_btagSF_all['SubJet'] = {
+            'deepcsv' : {
+                '2016' : {
+                    'inputFileName' : "subjet_DeepCSV_2016LegacySF_V1.csv",
+                    'measurement_types' : {
+                        0 : "lt", # b
+                        1 : "lt", # c
+                        2 : "incl"   # light
+                    },
+                    'supported_wp' : [ "L", "M" ]
+                },
+                '2017' : {
+                    'inputFileName' : "subjet_DeepCSV_94XSF_V4_B_F.csv",
+                    'measurement_types' : {
+                        0 : "lt", # b
+                        1 : "lt", # c
+                        2 : "incl"   # light
+                    },
+                    'supported_wp' : [ "L", "M" ]
+                },
+                '2018' : {
+                    'inputFileName' : "subjet_DeepCSV_102XSF_V1.csv",
+                    'measurement_types' : {
+                        0 : "lt", # b
+                        1 : "lt", # c
+                        2 : "incl"   # light
+                    },
+                    'supported_wp' : [ "L", "M" ]
+                },
+            }
+        }
+        assert(self.jetCollectionName in supported_btagSF_all)
+        supported_btagSF = supported_btagSF_all[self.jetCollectionName]
 
         supported_algos = []
         for algo in supported_btagSF.keys():
@@ -209,16 +245,16 @@ class btagSFProducer(Module):
         self.branchNames_central_and_systs = {}
         for central_or_syst in self.central_and_systs:
             if central_or_syst == "central":
-                self.branchNames_central_and_systs[central_or_syst] = "Jet_btagSF"
+                self.branchNames_central_and_systs[central_or_syst] = "%s_btagSF" % self.jetCollectionName
             else:
-                self.branchNames_central_and_systs[central_or_syst] = "Jet_btagSF_%s" % central_or_syst
+                self.branchNames_central_and_systs[central_or_syst] = "%s_btagSF_%s" % (self.jetCollectionName, central_or_syst)
 
         self.branchNames_central_and_systs_shape_corr = {}
         for central_or_syst in self.central_and_systs_shape_corr:
             if central_or_syst == "central":
-                self.branchNames_central_and_systs_shape_corr[central_or_syst] = "Jet_btagSF_shape"
+                self.branchNames_central_and_systs_shape_corr[central_or_syst] = "%s_btagSF_shape" % self.jetCollectionName
             else:
-                self.branchNames_central_and_systs_shape_corr[central_or_syst] = "Jet_btagSF_shape_%s" % central_or_syst
+                self.branchNames_central_and_systs_shape_corr[central_or_syst] = "%s_btagSF_shape_%s" % (self.jetCollectionName, central_or_syst)
 
     def beginJob(self):
         # initialize BTagCalibrationReader
@@ -249,9 +285,9 @@ class btagSFProducer(Module):
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree
         for central_or_syst in self.central_and_systs:
-            self.out.branch(self.branchNames_central_and_systs[central_or_syst], "F", lenVar="nJet")
+            self.out.branch(self.branchNames_central_and_systs[central_or_syst], "F", lenVar="n%s" % self.jetCollectionName)
         for central_or_syst in self.central_and_systs_shape_corr:
-            self.out.branch(self.branchNames_central_and_systs_shape_corr[central_or_syst], "F", lenVar="nJet")
+            self.out.branch(self.branchNames_central_and_systs_shape_corr[central_or_syst], "F", lenVar="n%s" % self.jetCollectionName)
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -322,7 +358,7 @@ class btagSFProducer(Module):
 
     def analyze(self, event):
         """process event, return True (go to next module) or False (fail, go to next event)"""
-        jets = Collection(event, "Jet")
+        jets = Collection(event, self.jetCollectionName)
 
         discr = None
         if self.algo == "csvv2":
