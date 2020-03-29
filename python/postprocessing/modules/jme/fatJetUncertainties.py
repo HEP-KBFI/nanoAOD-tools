@@ -49,28 +49,34 @@ class fatJetUncertaintiesProducer(Module):
 
         self.jetSmearer = jetSmearer(globalTag, jetType, self.jerInputFileName, self.jerUncertaintyInputFileName, self.jmrVals)
 
-        if "AK4" in jetType : 
+        if "AK4" in jetType :
             if "AK4LSLoose" in jetType_orig:
                 self.jetBranchName = "JetAK4LSLoose"
+                self.genJetBranchName = "GenJetAK4LS"
             elif "AK4LSFakeable" in jetType_orig:
                 self.jetBranchName = "JetAK4LSFakeable"
+                self.genJetBranchName = "GenJetAK4LS"
             else:
                 self.jetBranchName = "Jet"
-            self.genJetBranchName = "GenJet"
+                self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
             self.doGroomed = False
         elif "AK8" in jetType :
             if "AK8LSLoose" in jetType_orig:
                 self.jetBranchName = "FatJetAK8LSLoose"
                 self.subJetBranchName = "SubJetAK8LSLoose"
+                self.genJetBranchName = "GenJetAK8LS"
+                self.genSubJetBranchName = "SubGenJetAK8LSLoose"
             elif "AK8LSFakeable" in jetType_orig:
                 self.jetBranchName = "FatJetAK8LSFakeable"
                 self.subJetBranchName = "SubJetAK8LSFakeable"
+                self.genJetBranchName = "GenJetAK8LS"
+                self.genSubJetBranchName = "SubGenJetAK8LSFakeable"
             else:
                 self.jetBranchName = "FatJet"
                 self.subJetBranchName = "SubJet"
-            self.genJetBranchName = "GenJetAK8"
-            self.genSubJetBranchName = "SubGenJetAK8"
+                self.genJetBranchName = "GenJetAK8"
+                self.genSubJetBranchName = "SubGenJetAK8"
             if not self.noGroom:
                 self.doGroomed = True
                 self.puppiCorrFile = ROOT.TFile.Open(os.environ['CMSSW_BASE'] + "/src/PhysicsTools/NanoAODTools/data/jme/puppiCorr.root")
@@ -147,6 +153,15 @@ class fatJetUncertaintiesProducer(Module):
         #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
+        if not self.isData:
+            input_branchNames = [ branch.GetName() for branch in inputTree.GetListOfBranches() ]
+            n_genJetBranchName = 'n{}'.format(self.genJetBranchName)
+            n_genSubJetBranchName = 'n{}'.format(self.genSubJetBranchName)
+            if 'LS' in self.genJetBranchName and n_genJetBranchName not in input_branchNames:
+                self.genJetBranchName = self.genJetBranchName[:self.genJetBranchName.find('LS')]
+            if 'LS' in self.genSubJetBranchName and n_genSubJetBranchName not in input_branchNames:
+                self.genSubJetBranchName = self.genSubJetBranchName[:self.genSubJetBranchName.find('LS')]
+
         self.out = wrappedOutputTree
         self.out.branch("%s_pt_raw" % self.jetBranchName, "F", lenVar=self.lenVar)
         self.out.branch("%s_pt_nom" % self.jetBranchName, "F", lenVar=self.lenVar)

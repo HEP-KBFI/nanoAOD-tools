@@ -51,11 +51,13 @@ class jetmetUncertaintiesProducer(Module):
         if "AK4" in jetType :
             if "AK4LSLoose" in jetType_orig:
                 self.jetBranchName = "JetAK4LSLoose"
+                self.genJetBranchName = "GenJetAK4LS"
             elif "AK4LSFakeable" in jetType_orig:
                 self.jetBranchName = "JetAK4LSFakeable"
+                self.genJetBranchName = "GenJetAK4LS"
             else:
                 self.jetBranchName = "Jet"
-            self.genJetBranchName = "GenJet"
+                self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
         else:
             raise ValueError("ERROR: Invalid jet type = '%s'!" % jetType)
@@ -136,6 +138,12 @@ class jetmetUncertaintiesProducer(Module):
         #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
+        if not self.isData:
+            input_branchNames = [ branch.GetName() for branch in inputTree.GetListOfBranches() ]
+            n_genJetBranchName = 'n{}'.format(self.genJetBranchName)
+            if 'LS' in self.genJetBranchName and n_genJetBranchName not in input_branchNames:
+                self.genJetBranchName = self.genJetBranchName[:self.genJetBranchName.find('LS')]
+      
         self.out = wrappedOutputTree
         self.out.branch("%s_pt_raw" % self.jetBranchName, "F", lenVar=self.lenVar)
         self.out.branch("%s_pt_nom" % self.jetBranchName, "F", lenVar=self.lenVar)
@@ -166,7 +174,7 @@ class jetmetUncertaintiesProducer(Module):
               self.out.branch("%s_pt_unclustEn%s" % (self.metBranchName, shift), "F")
               self.out.branch("%s_phi_unclustEn%s" % (self.metBranchName, shift), "F")
                         
-        self.isV5NanoAOD = hasattr(inputTree, "Jet_muonSubtrFactor")
+        self.isV5NanoAOD = hasattr(inputTree, "{}_muonSubtrFactor".format(self.jetBranchName))
         print "nanoAODv5?", self.isV5NanoAOD
 
 
