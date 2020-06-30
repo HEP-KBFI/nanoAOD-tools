@@ -102,7 +102,7 @@ class btagSFProducer(Module):
                     'supported_wp' : [ "L", "M", "T", "shape_corr"]
                 },
                 '2018' : {
-                    'inputFileName' : "DeepCSV_102XSF_V1.csv",
+                    'inputFileName' : "DeepCSV_102XSF_V2.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
                         1 : "comb",  # c
@@ -136,7 +136,7 @@ class btagSFProducer(Module):
                     'supported_wp' : [ "L", "M", "T", "shape_corr"]
                 },
                 '2018' : {
-                    'inputFileName' : "DeepJet_102XSF_V1.csv",
+                    'inputFileName' : "DeepJet_102XSF_V2.csv",
                     'measurement_types' : {
                         0 : "comb",  # b
                         1 : "comb",  # c
