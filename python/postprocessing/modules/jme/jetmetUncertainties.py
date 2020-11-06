@@ -80,7 +80,7 @@ class jetmetUncertaintiesProducer(Module):
         else:
             self.jesUncertaintyInputFileName = globalTag + "_UncertaintySources_" + jetType + ".txt"
             if useRegrouped:
-                self.jesUncertaintyInputFileName = 'Regrouped_{}'.format(self.jesUncertaintyInputFileName)
+                self.jesUncertaintyInputFileName = 'RegroupedV2_{}'.format(self.jesUncertaintyInputFileName)
 
         # read all uncertainty source names from the loaded file
         if jesUncertainties[0] == "All":
