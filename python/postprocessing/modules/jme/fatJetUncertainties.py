@@ -362,7 +362,7 @@ class fatJetUncertaintiesProducer(Module):
                     genGroomedJet = None
                 if jet.subJetIdx1 >= 0 and jet.subJetIdx2 >= 0 :
                     subJets1 = subJets[jet.subJetIdx1]
-                    subJets2 = subJets[jet.subJetIdx1]
+                    subJets2 = subJets[jet.subJetIdx2]
                     subJets1_rawFactor = subJets1.rawFactor if hasattr(subJets1, 'rawFactor') else 0.
                     subJets2_rawFactor = subJets2.rawFactor if hasattr(subJets2, 'rawFactor') else 0.
                     groomedP4 = subJets1.p4() * (1. - subJets1_rawFactor) + subJets2.p4() * (1. - subJets2_rawFactor)
