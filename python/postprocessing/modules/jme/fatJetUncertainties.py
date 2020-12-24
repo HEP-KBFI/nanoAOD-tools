@@ -28,7 +28,6 @@ class fatJetUncertaintiesProducer(Module):
             jmsVals=[],
             isData=False,
             applySmearing=True,
-            useRegrouped=False,
             applyHEMfix=False,
             splitJER=False
     ):
@@ -48,6 +47,8 @@ class fatJetUncertaintiesProducer(Module):
             self.splitJERIDs = [""]  # "empty" ID for the overall JER
 
         self.jesUncertainties = jesUncertainties
+        jetType_orig = jetType
+        jetType = jetType.replace('LSLoose', '').replace('LSFakeable', '')
         # smear jet pT to account for measured difference in JER between data
         # and simulation.
         if jerTag != "":
@@ -89,15 +90,33 @@ class fatJetUncertaintiesProducer(Module):
                                      self.jmrVals)
 
         if "AK4" in jetType:
-            self.jetBranchName = "Jet"
-            self.genJetBranchName = "GenJet"
+            if "AK4LSLoose" in jetType_orig:
+                self.jetBranchName = "JetAK4LSLoose"
+                self.genJetBranchName = "GenJetAK4LS"
+            elif "AK4LSFakeable" in jetType_orig:
+                self.jetBranchName = "JetAK4LSFakeable"
+                self.genJetBranchName = "GenJetAK4LS"
+            else:
+                self.jetBranchName = "Jet"
+                self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
             self.doGroomed = False
         elif "AK8" in jetType:
-            self.jetBranchName = "FatJet"
-            self.subJetBranchName = "SubJet"
-            self.genJetBranchName = "GenJetAK8"
-            self.genSubJetBranchName = "SubGenJetAK8"
+            if "AK8LSLoose" in jetType_orig:
+                self.jetBranchName = "FatJetAK8LSLoose"
+                self.subJetBranchName = "SubJetAK8LSLoose"
+                self.genJetBranchName = "GenJetAK8LS"
+                self.genSubJetBranchName = "SubGenJetAK8LSLoose"
+            elif "AK8LSFakeable" in jetType_orig:
+                self.jetBranchName = "FatJetAK8LSFakeable"
+                self.subJetBranchName = "SubJetAK8LSFakeable"
+                self.genJetBranchName = "GenJetAK8LS"
+                self.genSubJetBranchName = "SubGenJetAK8LSFakeable"
+            else:
+                self.jetBranchName = "FatJet"
+                self.subJetBranchName = "SubJet"
+                self.genJetBranchName = "GenJetAK8"
+                self.genSubJetBranchName = "SubGenJetAK8"
             if not self.noGroom:
                 self.doGroomed = True
                 self.puppiCorrFile = ROOT.TFile.Open(
@@ -136,17 +155,18 @@ class fatJetUncertaintiesProducer(Module):
             "/src/PhysicsTools/NanoAODTools/data/jme/"
         # Text files are now tarred so must extract first into temporary
         # directory (gets deleted during python memory management at script exit)
-        self.jesArchive = tarfile.open(
-            self.jesInputArchivePath + globalTag +
-            ".tgz", "r:gz") if not archive else tarfile.open(
-                self.jesInputArchivePath + archive + ".tgz", "r:gz")
-        self.jesInputFilePath = tempfile.mkdtemp()
-        self.jesArchive.extractall(self.jesInputFilePath)
+        #self.jesArchive = tarfile.open(
+        #    self.jesInputArchivePath + globalTag +
+        #    ".tgz", "r:gz") if not archive else tarfile.open(
+        #        self.jesInputArchivePath + archive + ".tgz", "r:gz")
+        #self.jesInputFilePath = tempfile.mkdtemp()
+        #self.jesArchive.extractall(self.jesInputFilePath)
+        self.jesInputFilePath = os.path.join(self.jesInputArchivePath, globalTag)
 
         if len(jesUncertainties) == 1 and jesUncertainties[0] == "Total":
             self.jesUncertaintyInputFileName = globalTag + "_Uncertainty_" + jetType + ".txt"
         elif jesUncertainties[0] == "Merged" and not self.isData:
-            self.jesUncertaintyInputFileName = "Regrouped_" + \
+            self.jesUncertaintyInputFileName = "RegroupedV2_" + \
                 globalTag + "_UncertaintySources_" + jetType + ".txt"
         else:
             self.jesUncertaintyInputFileName = globalTag + \
@@ -231,9 +251,18 @@ class fatJetUncertaintiesProducer(Module):
     def endJob(self):
         if not self.isData:
             self.jetSmearer.endJob()
-        shutil.rmtree(self.jesInputFilePath)
+        #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
+        if not self.isData:
+            input_branchNames = [ branch.GetName() for branch in inputTree.GetListOfBranches() ]
+            n_genJetBranchName = 'n{}'.format(self.genJetBranchName)
+            n_genSubJetBranchName = 'n{}'.format(self.genSubJetBranchName)
+            if 'LS' in self.genJetBranchName and n_genJetBranchName not in input_branchNames:
+                self.genJetBranchName = self.genJetBranchName[:self.genJetBranchName.find('LS')]
+            if 'LS' in self.genSubJetBranchName and n_genSubJetBranchName not in input_branchNames:
+                self.genSubJetBranchName = self.genSubJetBranchName[:self.genSubJetBranchName.find('LS')]
+
         self.out = wrappedOutputTree
         self.out.branch("%s_pt_raw" % self.jetBranchName,
                         "F",
@@ -548,8 +577,11 @@ class fatJetUncertaintiesProducer(Module):
                     genGroomedSubJets = None
                     genGroomedJet = None
                 if jet.subJetIdx1 >= 0 and jet.subJetIdx2 >= 0:
-                    groomedP4 = subJets[jet.subJetIdx1].p4() + subJets[
-                        jet.subJetIdx2].p4()  # check subjet jecs
+                    subJets1 = subJets[jet.subJetIdx1]
+                    subJets2 = subJets[jet.subJetIdx2]
+                    subJets1_rawFactor = subJets1.rawFactor if hasattr(subJets1, 'rawFactor') else 0.
+                    subJets2_rawFactor = subJets2.rawFactor if hasattr(subJets2, 'rawFactor') else 0.
+                    groomedP4 = subJets1.p4() * (1. - subJets1_rawFactor) + subJets2.p4() * (1. - subJets2_rawFactor)
                 else:
                     groomedP4 = None
 

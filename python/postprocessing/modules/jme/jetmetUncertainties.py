@@ -27,7 +27,6 @@ class jetmetUncertaintiesProducer(Module):
                  jerTag="",
                  isData=False,
                  applySmearing=True,
-                 useRegrouped=False,
                  applyHEMfix=False,
                  splitJER=False,
                  saveMETUncs=['T1', 'T1Smear']
@@ -47,6 +46,7 @@ class jetmetUncertaintiesProducer(Module):
         else:
             self.splitJERIDs = [""]  # "empty" ID for the overall JER
         self.metBranchName = metBranchName
+        self.is2017MET = globalTag.startswith('Fall17')
         self.rhoBranchName = "fixedGridRhoFastjetAll"
         # --------------------------------------------------------------------
         # CV: globalTag and jetType not yet used in the jet smearer, as there
@@ -55,6 +55,8 @@ class jetmetUncertaintiesProducer(Module):
         # --------------------------------------------------------------------
 
         self.jesUncertainties = jesUncertainties
+        jetType_orig = jetType
+        jetType = jetType.replace('AK4LSLoose', 'AK4').replace('AK4LSFakeable', '')
 
         # Calculate and save uncertainties on T1Smear MET if this flag is set
         # to True. Otherwise calculate and save uncertainties on T1 MET
@@ -84,8 +86,15 @@ class jetmetUncertaintiesProducer(Module):
                                      self.jerUncertaintyInputFileName)
 
         if "AK4" in jetType:
-            self.jetBranchName = "Jet"
-            self.genJetBranchName = "GenJet"
+            if "AK4LSLoose" in jetType_orig:
+                self.jetBranchName = "JetAK4LSLoose"
+                self.genJetBranchName = "GenJetAK4LS"
+            elif "AK4LSFakeable" in jetType_orig:
+                self.jetBranchName = "JetAK4LSFakeable"
+                self.genJetBranchName = "GenJetAK4LS"
+            else:
+                self.jetBranchName = "Jet"
+                self.genJetBranchName = "GenJet"
             self.genSubJetBranchName = None
         else:
             raise ValueError("ERROR: Invalid jet type = '%s'!" % jetType)
@@ -98,12 +107,13 @@ class jetmetUncertaintiesProducer(Module):
         # Text files are now tarred so must extract first into temporary
         # directory (gets deleted during python memory management at
         # script exit)
-        self.jesArchive = tarfile.open(
-            self.jesInputArchivePath + globalTag +
-            ".tgz", "r:gz") if not archive else tarfile.open(
-                self.jesInputArchivePath + archive + ".tgz", "r:gz")
-        self.jesInputFilePath = tempfile.mkdtemp()
-        self.jesArchive.extractall(self.jesInputFilePath)
+        #self.jesArchive = tarfile.open(
+        #    self.jesInputArchivePath + globalTag +
+        #    ".tgz", "r:gz") if not archive else tarfile.open(
+        #        self.jesInputArchivePath + archive + ".tgz", "r:gz")
+        #self.jesInputFilePath = tempfile.mkdtemp()
+        #self.jesArchive.extractall(self.jesInputFilePath)
+        self.jesInputFilePath = os.path.join(self.jesInputArchivePath, globalTag)
 
         # to fully re-calculate type-1 MET the JEC that are currently
         # applied are also needed. IS THAT EVEN CORRECT?
@@ -111,7 +121,7 @@ class jetmetUncertaintiesProducer(Module):
         if len(jesUncertainties) == 1 and jesUncertainties[0] == "Total":
             self.jesUncertaintyInputFileName = globalTag + "_Uncertainty_" + jetType + ".txt"
         elif jesUncertainties[0] == "Merged" and not self.isData:
-            self.jesUncertaintyInputFileName = "Regrouped_" + \
+            self.jesUncertaintyInputFileName = "RegroupedV2_" + \
                 globalTag + "_UncertaintySources_" + jetType + ".txt"
         else:
             self.jesUncertaintyInputFileName = globalTag + \
@@ -233,9 +243,15 @@ class jetmetUncertaintiesProducer(Module):
     def endJob(self):
         if not self.isData:
             self.jetSmearer.endJob()
-        shutil.rmtree(self.jesInputFilePath)
+        #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
+        if not self.isData:
+            input_branchNames = [ branch.GetName() for branch in inputTree.GetListOfBranches() ]
+            n_genJetBranchName = 'n{}'.format(self.genJetBranchName)
+            if 'LS' in self.genJetBranchName and n_genJetBranchName not in input_branchNames:
+                self.genJetBranchName = self.genJetBranchName[:self.genJetBranchName.find('LS')]
+
         self.out = wrappedOutputTree
         self.out.branch("%s_pt_raw" % self.jetBranchName,
                         "F",
@@ -319,7 +335,7 @@ class jetmetUncertaintiesProducer(Module):
                 self.out.branch(
                     "%s_phi_unclustEn%s" % (self.metBranchName, shift), "F")
 
-        self.isV5NanoAOD = hasattr(inputTree, "Jet_muonSubtrFactor")
+        self.isV5NanoAOD = hasattr(inputTree, "{}_muonSubtrFactor".format(self.jetBranchName))
         print("nanoAODv5 or higher: " + str(self.isV5NanoAOD))
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
@@ -560,7 +576,7 @@ class jetmetUncertaintiesProducer(Module):
             jet_pt_prodL1L2L3 = jet_pt_noMuProdL1L2L3 + muon_pt
             jet_pt_prodL1 = jet_pt_noMuProdL1 + muon_pt
 
-            if self.metBranchName == 'METFixEE2017':
+            if self.is2017MET:
                 # get the delta for removing L1L2L3-L1 corrected jets
                 # (corrected with GT from nanoAOD production!!) in the
                 # EE region from the default MET branch.
@@ -694,7 +710,7 @@ class jetmetUncertaintiesProducer(Module):
             if jet_pt_noMuL1L2L3 > self.unclEnThreshold and (jet.neEmEF +
                                                              jet.chEmEF) < 0.9:
                 # do not re-correct for jets that aren't included in METv2 recipe
-                if not (self.metBranchName == 'METFixEE2017'
+                if not (self.is2017MET
                         and 2.65 < abs(jet.eta) < 3.14 and jet.pt *
                         (1 - jet.rawFactor) < 50):
                     jet_cosPhi = math.cos(jet.phi)
@@ -798,7 +814,7 @@ class jetmetUncertaintiesProducer(Module):
                                     jesDown_correction_forT1SmearMET * jet_sinPhi
 
         # propagate "unclustered energy" uncertainty to MET
-        if self.metBranchName == 'METFixEE2017':
+        if self.is2017MET:
             # Remove the L1L2L3-L1 corrected jets in the EE region from the
             # default MET branch
             def_met_px += delta_x_T1Jet
@@ -1030,9 +1046,9 @@ jetmetUncertainties2016All = lambda: jetmetUncertaintiesProducer(
 jetmetUncertainties2017 = lambda: jetmetUncertaintiesProducer(
     "2017", "Fall17_17Nov2017_V32_MC", ["Total"])
 jetmetUncertainties2017METv2 = lambda: jetmetUncertaintiesProducer(
-    "2017", "Fall17_17Nov2017_V32_MC", metBranchName='METFixEE2017')
+    "2017", "Fall17_17Nov2017_V32_MC", metBranchName='MET')
 jetmetUncertainties2017All = lambda: jetmetUncertaintiesProducer(
-    "2017", "Fall17_17Nov2017_V32_MC", ["All"])
+    "2017", "Fall17_17Nov2017_V32_MC", ["All"], metBranchName='MET')
 
 jetmetUncertainties2018 = lambda: jetmetUncertaintiesProducer(
     "2018", "Autumn18_V8_MC", ["Total"])
