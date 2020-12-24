@@ -89,8 +89,8 @@ def createJMECorrector(isMC=True,
                        metBranchName="MET",
                        applySmearing=True,
                        isFastSim=False,
-                       applyHEMfix=False,
-                       splitJER=False,
+                       applyHEMfix=True,
+                       splitJER=True,
                        saveMETUncs=['T1', 'T1Smear']):
 
     dataYear = str(dataYear)
