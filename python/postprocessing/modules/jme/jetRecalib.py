@@ -32,10 +32,11 @@ class jetRecalib(Module):
             "/src/PhysicsTools/NanoAODTools/data/jme/"
         # Text files are now tarred so must extract first into temporary
         # directory (gets deleted during python memory management at script exit)
-        self.jesArchive = tarfile.open(
-            self.jesInputArchivePath + archive + ".tgz", "r:gz")
-        self.jesInputFilePath = tempfile.mkdtemp()
-        self.jesArchive.extractall(self.jesInputFilePath)
+        #self.jesArchive = tarfile.open(
+        #    self.jesInputArchivePath + archive + ".tgz", "r:gz")
+        #self.jesInputFilePath = tempfile.mkdtemp()
+        #self.jesArchive.extractall(self.jesInputFilePath)
+        self.jesInputFilePath = os.path.join(self.jesInputArchivePath, archive)
 
         self.jetReCalibrator = JetReCalibrator(
             globalTag,
@@ -67,7 +68,8 @@ class jetRecalib(Module):
         pass
 
     def endJob(self):
-        shutil.rmtree(self.jesInputFilePath)
+        pass
+        #shutil.rmtree(self.jesInputFilePath)
 
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree

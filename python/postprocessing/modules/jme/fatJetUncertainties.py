@@ -28,6 +28,7 @@ class fatJetUncertaintiesProducer(Module):
             jmsVals=[],
             isData=False,
             applySmearing=True,
+            useRegrouped=False,
             applyHEMfix=False,
             splitJER=False
     ):

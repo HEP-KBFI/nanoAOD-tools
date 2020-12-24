@@ -16,8 +16,8 @@ class jetSmearer(Module):
             self,
             globalTag,
             jetType="AK4PFchs",
-            jerInputFileName="Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt",
-            jerUncertaintyInputFileName="Spring16_25nsV10_MC_SF_AK4PFchs.txt",
+            jerInputFileName="",
+            jerUncertaintyInputFileName="",
             jmr_vals=[1.09, 1.14, 1.04]):
 
         # -------------------------------------------------------------------
@@ -33,10 +33,11 @@ class jetSmearer(Module):
             "/src/PhysicsTools/NanoAODTools/data/jme/"
         self.jerTag = jerInputFileName[:jerInputFileName.find('_MC_') +
                                        len('_MC')]
-        self.jerArchive = tarfile.open(
-            self.jerInputArchivePath + self.jerTag + ".tgz", "r:gz")
-        self.jerInputFilePath = tempfile.mkdtemp()
-        self.jerArchive.extractall(self.jerInputFilePath)
+        #self.jerArchive = tarfile.open(
+        #    self.jerInputArchivePath + self.jerTag + ".tgz", "r:gz")
+        #self.jerInputFilePath = tempfile.mkdtemp()
+        #self.jerArchive.extractall(self.jerInputFilePath)
+        self.jerInputFilePath = os.path.join(self.jerInputArchivePath, self.jerTag)
         self.jerInputFileName = jerInputFileName
         self.jerUncertaintyInputFileName = jerUncertaintyInputFileName
 
@@ -80,7 +81,8 @@ class jetSmearer(Module):
                          self.jerUncertaintyInputFileName))
 
     def endJob(self):
-        shutil.rmtree(self.jerInputFilePath)
+        pass
+        #shutil.rmtree(self.jerInputFilePath)
 
     def setSeed(self, event):
         """Set seed deterministically."""

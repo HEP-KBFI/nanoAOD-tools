@@ -27,6 +27,7 @@ class jetmetUncertaintiesProducer(Module):
                  jerTag="",
                  isData=False,
                  applySmearing=True,
+                 useRegrouped=False,
                  applyHEMfix=False,
                  splitJER=False,
                  saveMETUncs=['T1', 'T1Smear']

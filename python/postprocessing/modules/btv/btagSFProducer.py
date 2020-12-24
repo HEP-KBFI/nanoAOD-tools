@@ -2,6 +2,7 @@ from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collection
 import ROOT
 import os
+import re
 from itertools import chain
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -36,14 +37,16 @@ class btagSFProducer(Module):
     """
 
     def __init__(
-            self, era, algo='csvv2', selectedWPs=['M', 'shape_corr'],
-            sfFileName=None, verbose=0, jesSystsForShape=["jes"]
+        self, era, algo='deepjet', selectedWPs=['shape_corr'],
+        sfFileName=None, verbose=0, jesSystsForShape=["jes"],
+        jetCollectionName='Jet',
     ):
         self.era = era
         self.algo = algo.lower()
         self.selectedWPs = selectedWPs
         self.verbose = verbose
         self.jesSystsForShape = jesSystsForShape
+        self.jetCollectionName = jetCollectionName
         # CV: Return value of BTagCalibrationReader::eval_auto_bounds() is zero
         # in case jet abs(eta) > 2.4 !!
         self.max_abs_eta = 2.4
@@ -53,7 +56,8 @@ class btagSFProducer(Module):
         self.inputFileName = sfFileName
         self.measurement_types = None
         self.supported_wp = None
-        supported_btagSF = {
+        supported_btagSF_all = {}
+        supported_btagSF_all['Jet'] = {
             'csvv2': {
                 '2016': {
                     'inputFileName': "btagSF_CSVv2_ichep2016.csv",
@@ -75,7 +79,7 @@ class btagSFProducer(Module):
                 }
             },
             'deepcsv': {
-                'Legacy2016': {
+                '2016': {
                     'inputFileName': "DeepCSV_2016LegacySF_V1.csv",
                     'measurement_types': {
                         0: "comb",  # b
@@ -84,8 +88,17 @@ class btagSFProducer(Module):
                     },
                     'supported_wp': ["L", "M", "T", "shape_corr"]
                 },
+                '2016_TuneCP5': {
+                    'inputFileName': "DeepCSV_2016LegacySF_V1_TuneCP5.csv",
+                    'measurement_types': {
+                        0: "comb",  # b
+                        1: "comb",  # c
+                        2: "incl"   # light
+                    },
+                    'supported_wp': ["L", "M", "T", "shape_corr"]
+                },
                 '2017': {
-                    'inputFileName': "DeepCSV_94XSF_V4_B_F.csv",
+                    'inputFileName': "DeepCSV_94XSF_V5_B_F.csv",
                     'measurement_types': {
                         0: "comb",  # b
                         1: "comb",  # c
@@ -94,7 +107,7 @@ class btagSFProducer(Module):
                     'supported_wp': ["L", "M", "T", "shape_corr"]
                 },
                 '2018': {
-                    'inputFileName': "DeepCSV_102XSF_V1.csv",
+                    'inputFileName': "DeepCSV_102XSF_V2.csv",
                     'measurement_types': {
                         0: "comb",  # b
                         1: "comb",  # c
@@ -104,7 +117,7 @@ class btagSFProducer(Module):
                 }
             },
             'deepjet': {
-                'Legacy2016': {
+                '2016': {
                     'inputFileName': "DeepJet_2016LegacySF_V1.csv",
                     'measurement_types': {
                         0: "comb",  # b
@@ -113,8 +126,13 @@ class btagSFProducer(Module):
                     },
                     'supported_wp': ["L", "M", "T", "shape_corr"]
                 },
+                '2016_TuneCP5': {
+                    'inputFileName': "DeepJet_2016LegacySF_V1_TuneCP5.csv",
+                    'measurement_types': {},
+                    'supported_wp': [ "shape_corr"]
+                },
                 '2017': {
-                    'inputFileName': "DeepFlavour_94XSF_V3_B_F.csv",
+                    'inputFileName': "DeepFlavour_94XSF_V4_B_F.csv",
                     'measurement_types': {
                         0: "comb",  # b
                         1: "comb",  # c
@@ -123,7 +141,7 @@ class btagSFProducer(Module):
                     'supported_wp': ["L", "M", "T", "shape_corr"]
                 },
                 '2018': {
-                    'inputFileName': "DeepJet_102XSF_V1.csv",
+                    'inputFileName': "DeepJet_102XSF_V2.csv",
                     'measurement_types': {
                         0: "comb",  # b
                         1: "comb",  # c
@@ -144,6 +162,42 @@ class btagSFProducer(Module):
                 }
             }
         }
+        supported_btagSF_all['SubJet'] = {
+            'deepcsv': {
+                '2016': {
+                    'inputFileName': "subjet_DeepCSV_2016LegacySF_V1.csv",
+                    'measurement_types': {
+                        0: "lt", # b
+                        1: "lt", # c
+                        2: "incl"   # light
+                    },
+                    'supported_wp': [ "L", "M" ]
+                },
+                '2017': {
+                    'inputFileName': "subjet_DeepCSV_94XSF_V4_B_F.csv",
+                    'measurement_types': {
+                        0: "lt", # b
+                        1: "lt", # c
+                        2: "incl"   # light
+                    },
+                    'supported_wp': [ "L", "M" ]
+                },
+                '2018': {
+                    'inputFileName': "subjet_DeepCSV_102XSF_V1.csv",
+                    'measurement_types': {
+                        0: "lt", # b
+                        1: "lt", # c
+                        2: "incl"   # light
+                    },
+                    'supported_wp': [ "L", "M" ]
+                },
+            }
+        }
+        jetCollectionName_key = self.jetCollectionName
+        if re.match('\w+AK\dLS\w+', jetCollectionName_key):
+            jetCollectionName_key = jetCollectionName_key[:jetCollectionName_key.index('AK')]
+        assert(jetCollectionName_key in supported_btagSF_all)
+        supported_btagSF = supported_btagSF_all[jetCollectionName_key]
 
         supported_algos = []
         for algo in list(supported_btagSF.keys()):
@@ -165,6 +219,19 @@ class btagSFProducer(Module):
             if wp not in self.supported_wp:
                 raise ValueError("ERROR: Working point '%s' not supported for algo = '%s' and era = '%s'! Please choose among { %s }." % (
                     wp, self.algo, self.era, self.supported_wp))
+
+        algoLabel = None
+        if self.algo == "csvv2":
+            algoLabel = "CSV (v2)"
+        elif self.algo == "deepcsv":
+            algoLabel = "deep-CSV (b)"
+        elif self.algo == "cmva":
+            algoLabel = "cMVA"
+        elif self.algo == "deepjet":
+            algoLabel = "DeepJet"
+        else:
+            raise ValueError("ERROR: Algorithm '%s' not supported for era = '%s'! Please choose among { %s }." % (self.algo, self.era, supported_algos))
+        print("Loading btagSF weights for %s algorithm from file '%s'" % (algoLabel, os.path.join(self.inputFilePath, self.inputFileName)))
 
         # load libraries for accessing b-tag scale factors (SFs) from conditions database
         for library in ["libCondFormatsBTauObjects", "libCondToolsBTau"]:
@@ -194,10 +261,10 @@ class btagSFProducer(Module):
             branchNames = {}
             if wp == 'shape_corr':
                 central_and_systs = self.central_and_systs_shape_corr
-                baseBranchName = 'Jet_btagSF_{}_shape'.format(self.algo)
+                baseBranchName = '{}_btagSF_{}_shape'.format(self.jetCollectionName, self.algo)
             else:
                 central_and_systs = self.central_and_systs
-                baseBranchName = 'Jet_btagSF_{}_{}'.format(self.algo, wp)
+                baseBranchName = '{}_btagSF_{}_{}'.format(self.jetCollectionName, self.algo, wp)
             for central_or_syst in central_and_systs:
                 if central_or_syst == "central":
                     branchNames[central_or_syst] = baseBranchName
@@ -239,7 +306,7 @@ class btagSFProducer(Module):
         self.out = wrappedOutputTree
         for central_or_syst in list(self.branchNames_central_and_systs.values()):
             for branch in list(central_or_syst.values()):
-                self.out.branch(branch, "F", lenVar="nJet")
+                self.out.branch(branch, "F", lenVar="n{}".format(self.jetCollectionName))
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -313,7 +380,7 @@ class btagSFProducer(Module):
 
     def analyze(self, event):
         """process event, return True (go to next module) or False (fail, go to next event)"""
-        jets = Collection(event, "Jet")
+        jets = Collection(event, self.jetCollectionName)
 
         discr = None
         if self.algo == "csvv2":
@@ -335,14 +402,16 @@ class btagSFProducer(Module):
             central_and_systs = (
                 self.central_and_systs_shape_corr if isShape else self.central_and_systs)
             for central_or_syst in central_and_systs:
+                central_or_syst = central_or_syst.lower()
                 scale_factors = list(self.getSFs(
                     preloaded_jets, central_or_syst, reader, 'auto', isShape))
                 self.out.fillBranch(
                     self.branchNames_central_and_systs[wp][central_or_syst], scale_factors)
         return True
 
-# define modules using the syntax 'name = lambda : constructor' to avoid having them loaded when not needed
+# define modules using the syntax 'name = lambda: constructor' to avoid having them loaded when not needed
 
 
 btagSF2016 = lambda: btagSFProducer("2016")
 btagSF2017 = lambda: btagSFProducer("2017")
+btagSF2018 = lambda: btagSFProducer("2018")
