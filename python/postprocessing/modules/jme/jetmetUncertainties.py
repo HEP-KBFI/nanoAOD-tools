@@ -41,10 +41,9 @@ class jetmetUncertaintiesProducer(Module):
         # switched on for data.
         self.applySmearing = applySmearing if not isData else False
         self.splitJER = splitJER
+        self.splitJERIDs = [""]  # "empty" ID for the overall JER
         if self.splitJER:
-            self.splitJERIDs = list(range(6))
-        else:
-            self.splitJERIDs = [""]  # "empty" ID for the overall JER
+            self.splitJERIDs.extend(list(range(6)))
         self.metBranchName = metBranchName
         self.is2017MET = globalTag.startswith('Fall17')
         self.rhoBranchName = "fixedGridRhoFastjetAll"
@@ -195,22 +194,28 @@ class jetmetUncertaintiesProducer(Module):
                 ROOT.gSystem.Load(library)
 
     def getJERsplitID(self, pt, eta):
-        if not self.splitJER:
-            return ""
+        splitJERIDs = []
+        if "" in self.splitJERIDs:
+            splitJERIDs.append("")
+
         if abs(eta) < 1.93:
-            return 0
+            splitJERID = 0
         elif abs(eta) < 2.5:
-            return 1
+            splitJERID = 1
         elif abs(eta) < 3:
             if pt < 50:
-                return 2
+                splitJERID = 2
             else:
-                return 3
+                splitJERID = 3
         else:
             if pt < 50:
-                return 4
+                splitJERID = 4
             else:
-                return 5
+                splitJERID = 5
+
+        if splitJERID in self.splitJERIDs:
+            splitJERIDs.append(splitJERID)
+        return splitJERIDs
 
     def beginJob(self):
 
@@ -629,11 +634,12 @@ class jetmetUncertaintiesProducer(Module):
                     jerID: jet_mass_nom
                     for jerID in self.splitJERIDs
                 }
-                thisJERID = self.getJERsplitID(jet_pt_nom, jet.eta)
-                jet_pt_jerUp[thisJERID] = jet_pt_jerUpVal * jet_pt
-                jet_pt_jerDown[thisJERID] = jet_pt_jerDownVal * jet_pt
-                jet_mass_jerUp[thisJERID] = jet_pt_jerUpVal * jet_mass
-                jet_mass_jerDown[thisJERID] = jet_pt_jerDownVal * jet_mass
+                thisJERIDs = self.getJERsplitID(jet_pt_nom, jet.eta)
+                for thisJERID in thisJERIDs:
+                    jet_pt_jerUp[thisJERID] = jet_pt_jerUpVal * jet_pt
+                    jet_pt_jerDown[thisJERID] = jet_pt_jerDownVal * jet_pt
+                    jet_mass_jerUp[thisJERID] = jet_pt_jerUpVal * jet_mass
+                    jet_mass_jerDown[thisJERID] = jet_pt_jerDownVal * jet_mass
 
                 # evaluate JES uncertainties
                 jet_pt_jesUp = {}
@@ -776,7 +782,7 @@ class jetmetUncertaintiesProducer(Module):
                         if 'T1Smear' in self.saveMETUncs:
                             for jerID in self.splitJERIDs:
                                 jerUpVal, jerDownVal = jet_pt_jerNomVal, jet_pt_jerNomVal
-                                if jerID == self.getJERsplitID(
+                                if jerID in self.getJERsplitID(
                                         jet_pt_nom, jet.eta):
                                     jerUpVal, jerDownVal = jet_pt_jerUpVal, jet_pt_jerDownVal
                                 met_T1Smear_px_jerUp[
