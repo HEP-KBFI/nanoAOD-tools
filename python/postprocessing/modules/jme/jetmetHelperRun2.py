@@ -89,7 +89,7 @@ def createJMECorrector(isMC=True,
                        metBranchName="MET",
                        applySmearing=True,
                        isFastSim=False,
-                       applyHEMfix=True,
+                       applyHEMfix=False,
                        splitJER=True,
                        saveMETUncs=['T1Smear']):
 
