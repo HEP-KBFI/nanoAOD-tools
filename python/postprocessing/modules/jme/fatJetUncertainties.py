@@ -41,10 +41,9 @@ class fatJetUncertaintiesProducer(Module):
         # factors and uncertainties yet
         # ---------------------------------------------------------------------
         self.splitJER = splitJER
+        self.splitJERIDs = [""]  # "empty" ID for the overall JER
         if self.splitJER:
-            self.splitJERIDs = list(range(6))
-        else:
-            self.splitJERIDs = [""]  # "empty" ID for the overall JER
+            self.splitJERIDs.extend(list(range(6)))
 
         self.jesUncertainties = jesUncertainties
         jetType_orig = jetType
@@ -203,22 +202,28 @@ class fatJetUncertaintiesProducer(Module):
                 ROOT.gSystem.Load(library)
 
     def getJERsplitID(self, pt, eta):
-        if not self.splitJER:
-            return ""
+        splitJERIDs = []
+        if "" in self.splitJERIDs:
+            splitJERIDs.append("")
+
         if abs(eta) < 1.93:
-            return 0
+            splitJERID = 0
         elif abs(eta) < 2.5:
-            return 1
+            splitJERID = 1
         elif abs(eta) < 3:
             if pt < 50:
-                return 2
+                splitJERID = 2
             else:
-                return 3
+                splitJERID = 3
         else:
             if pt < 50:
-                return 4
+                splitJERID = 4
             else:
-                return 5
+                splitJERID = 5
+
+        if splitJERID in self.splitJERIDs:
+            splitJERIDs.append(splitJERID)
+        return splitJERIDs
 
     def beginJob(self):
 
@@ -540,13 +545,14 @@ class fatJetUncertaintiesProducer(Module):
                     jerID: jet_mass_nom
                     for jerID in self.splitJERIDs
                 }
-                thisJERID = self.getJERsplitID(jet_pt_nom, jet.eta)
-                jet_pt_jerUp[thisJERID] = jet_pt_jerUpVal * jet_pt
-                jet_pt_jerDown[thisJERID] = jet_pt_jerDownVal * jet_pt
-                jet_mass_jerUp[thisJERID] = jet_pt_jerUpVal * \
-                    jet_mass_jmrNomVal * jmsNomVal * jet_mass
-                jet_mass_jerDown[thisJERID] = jet_pt_jerDownVal * \
-                    jet_mass_jmrNomVal * jmsNomVal * jet_mass
+                thisJERIDs = self.getJERsplitID(jet_pt_nom, jet.eta)
+                for thisJERID in thisJERIDs:
+                    jet_pt_jerUp[thisJERID] = jet_pt_jerUpVal * jet_pt
+                    jet_pt_jerDown[thisJERID] = jet_pt_jerDownVal * jet_pt
+                    jet_mass_jerUp[thisJERID] = jet_pt_jerUpVal * \
+                        jet_mass_jmrNomVal * jmsNomVal * jet_mass
+                    jet_mass_jerDown[thisJERID] = jet_pt_jerDownVal * \
+                        jet_mass_jmrNomVal * jmsNomVal * jet_mass
 
                 for jerID in self.splitJERIDs:
                     jets_pt_jerUp[jerID].append(jet_pt_jerUp[jerID])
@@ -635,11 +641,12 @@ class fatJetUncertaintiesProducer(Module):
                         jerID: jet_msdcorr_nom
                         for jerID in self.splitJERIDs
                     }
-                    thisJERID = self.getJERsplitID(jet_pt_nom, jet.eta)
-                    jet_msdcorr_jerUp[thisJERID] = jet_pt_jerUpVal * \
-                        jet_msdcorr_jmrNomVal * jmsNomVal * jet_msdcorr_raw
-                    jet_msdcorr_jerDown[thisJERID] = jet_pt_jerDownVal * \
-                        jet_msdcorr_jmrNomVal * jmsNomVal * jet_msdcorr_raw
+                    thisJERIDs = self.getJERsplitID(jet_pt_nom, jet.eta)
+                    for thisJERID in thisJERIDs:
+                        jet_msdcorr_jerUp[thisJERID] = jet_pt_jerUpVal * \
+                            jet_msdcorr_jmrNomVal * jmsNomVal * jet_msdcorr_raw
+                        jet_msdcorr_jerDown[thisJERID] = jet_pt_jerDownVal * \
+                            jet_msdcorr_jmrNomVal * jmsNomVal * jet_msdcorr_raw
                     for jerID in self.splitJERIDs:
                         jets_msdcorr_jerUp[jerID].append(
                             jet_msdcorr_jerUp[jerID])
@@ -695,10 +702,11 @@ class fatJetUncertaintiesProducer(Module):
                         jerID: jet_msdcorr_tau21DDT_nom
                         for jerID in self.splitJERIDs
                     }
-                    jet_msdcorr_tau21DDT_jerUp[thisJERID] = jet_pt_jerUpVal * \
-                        jet_msdcorr_tau21DDT_jmrNomVal * jmstau21DDTNomVal * jet_msdcorr_raw
-                    jet_msdcorr_tau21DDT_jerDown[thisJERID] = jet_pt_jerDownVal * \
-                        jet_msdcorr_tau21DDT_jmrNomVal * jmstau21DDTNomVal * jet_msdcorr_raw
+                    for thisJERID in thisJERIDs:
+                        jet_msdcorr_tau21DDT_jerUp[thisJERID] = jet_pt_jerUpVal * \
+                            jet_msdcorr_tau21DDT_jmrNomVal * jmstau21DDTNomVal * jet_msdcorr_raw
+                        jet_msdcorr_tau21DDT_jerDown[thisJERID] = jet_pt_jerDownVal * \
+                            jet_msdcorr_tau21DDT_jmrNomVal * jmstau21DDTNomVal * jet_msdcorr_raw
                     for jerID in self.splitJERIDs:
                         jets_msdcorr_tau21DDT_jerUp[jerID].append(
                             jet_msdcorr_tau21DDT_jerUp[jerID])
